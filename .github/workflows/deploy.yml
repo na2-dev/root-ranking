@@ -120,7 +120,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add public/*.json
+          git add -f public/*.json
           git diff --staged --quiet || git commit -m "Daily data update $(date +'%Y-%m-%d')"
           git push
 
