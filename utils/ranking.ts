@@ -142,10 +142,8 @@ export async function loadRankingData(dateString: string): Promise<RankingData[]
  */
 export function formatNumber(numStr: string): string {
 
-  console.log(`Received number string: ${numStr}`); // デバッグ用ログ
   // 文字列を数値に変換
   const num = parseFloat(numStr);
-  console.log(`Formatting number: ${num}`); // デバッグ用ログ
   
   // 整数部分と小数部分を分離
   const integerPart = Math.floor(num);
