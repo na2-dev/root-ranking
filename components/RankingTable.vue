@@ -32,8 +32,25 @@
               {{ item.movement }}
             </td>
             <td class="address">
-              <span class="address-full">{{ item.address }}</span>
-              <span class="address-short">{{ formatAddress(item.address) }}</span>
+              <div class="address-container">
+                <a 
+                  :href="`https://rootscan.io/addresses/${item.address}`" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  class="address-link"
+                  :title="`Root Scanで詳細を見る: ${item.address}`"
+                >
+                  <span class="address-full">{{ item.address }}</span>
+                  <span class="address-short">{{ formatAddress(item.address) }}</span>
+                </a>
+                <button 
+                  @click="copyAddress(item.address)" 
+                  class="copy-button"
+                  :title="`アドレスをコピー: ${item.address}`"
+                >
+                  📋
+                </button>
+              </div>
             </td>
             <td class="amount">{{ formatNumber(item.amount) }}</td>
           </tr>
@@ -93,6 +110,24 @@ const displayedRankings = computed(() => {
 // 展開/折りたたみの切り替え
 function toggleShowAll() {
   showAll.value = !showAll.value;
+}
+
+// アドレスをクリップボードにコピー
+async function copyAddress(address: string) {
+  try {
+    await navigator.clipboard.writeText(address);
+    // 成功時の視覚的フィードバック（オプション）
+    console.log('Address copied to clipboard:', address);
+  } catch (err) {
+    // fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = address;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    console.log('Address copied to clipboard (fallback):', address);
+  }
 }
 
 // 日付をYYYYMMDD形式からYYYY-MM-DD形式に変換
@@ -247,8 +282,51 @@ function getMovementClass(movement: string | undefined): string {
   word-break: break-all;
 }
 
+.address-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.address-link {
+  color: #3498db;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.address-link:hover {
+  color: #2980b9;
+  text-decoration: underline;
+}
+
 .address-short {
   display: none;
+}
+
+.copy-button {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: scale(1.05);
+}
+
+.copy-button:active {
+  transform: scale(0.95);
+  background: #dee2e6;
 }
 
 .amount {
@@ -344,6 +422,13 @@ function getMovementClass(movement: string | undefined): string {
     min-width: 120px;
   }
   
+  .copy-button {
+    min-width: 24px;
+    height: 24px;
+    padding: 2px 4px;
+    font-size: 0.7rem;
+  }
+  
   .amount {
     width: 25%;
     min-width: 100px;
@@ -378,6 +463,13 @@ function getMovementClass(movement: string | undefined): string {
   .address {
     width: 40%;
     min-width: 100px;
+  }
+  
+  .copy-button {
+    min-width: 20px;
+    height: 20px;
+    padding: 1px 2px;
+    font-size: 0.6rem;
   }
   
   .amount {
