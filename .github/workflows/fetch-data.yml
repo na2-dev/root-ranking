@@ -1,0 +1,80 @@
+name: Fetch Daily Data
+
+on:
+  schedule:
+    # 毎日UTC 00:00 (日本時間 09:00) に実行
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 手動実行を可能にする
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+      
+      - name: Fetch API data
+        run: |
+          # GitHub SecretsからAPIキーを取得
+          API_KEY="${{ secrets.ROOT_SCAN_API_KEY }}"
+          
+          if [ -z "$API_KEY" ]; then
+            echo "ROOT_SCAN_API_KEY secret is not set"
+            exit 1
+          fi
+          
+          # APIからデータを取得
+          curl --request POST \
+               --url https://api.rootscan.io/v1/addresses \
+               --header 'accept: application/json' \
+               --header 'content-type: application/json' \
+               --header "x-api-key: $API_KEY" \
+               --data '{
+                 "page": 0,
+                 "perPage": 1000
+               }' \
+               -o "public/${{ steps.date.outputs.date }}.json"
+          
+          # JSONファイルが正常に作成されたかチェック
+          if [ ! -f "public/${{ steps.date.outputs.date }}.json" ]; then
+            echo "Failed to create JSON file"
+            exit 1
+          fi
+          
+          # JSONの構文をチェック
+          if ! jq empty "public/${{ steps.date.outputs.date }}.json"; then
+            echo "Invalid JSON format"
+            exit 1
+          fi
+          
+          echo "Successfully fetched data for ${{ steps.date.outputs.date }}"
+      
+      - name: Create public directory if it doesn't exist
+        run: mkdir -p public
+      
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add public/${{ steps.date.outputs.date }}.json
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add daily data for ${{ steps.date.outputs.date }}"
+            git push
+          fi

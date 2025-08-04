@@ -1,0 +1,161 @@
+name: Deploy and Fetch Data
+
+on:
+  schedule:
+    # 毎日午前9時（UTC 0時）に実行
+    - cron: '0 0 * * *'
+  push:
+    branches: [ main ]
+  workflow_dispatch: # 手動実行を許可
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install
+      
+      - name: Fetch API data
+        run: |
+          # 今日の日付を取得 (YYYYMMDD形式)
+          TODAY=$(date +'%Y%m%d')
+          
+          # publicディレクトリを作成
+          mkdir -p public
+          
+          # Root Scan APIからデータを取得
+          if [ -n "${{ secrets.ROOT_SCAN_API_KEY }}" ]; then
+            echo "Fetching data from Root Scan API..."
+            
+            # APIからデータを取得
+            curl -X POST "https://api.rootscan.io/v1/addresses" \
+                 -H "Accept: application/json" \
+                 -H "Content-Type: application/json" \
+                 -H "x-api-key: ${{ secrets.ROOT_SCAN_API_KEY }}" \
+                 -d '{"page":0,"perPage":1000}' \
+                 -o "public/${TODAY}.json"
+          else
+            echo "ROOT_SCAN_API_KEY not set, creating sample data..."
+            # サンプルデータを生成（テスト用）
+            cat > public/${TODAY}.json << EOF
+          {
+            "data": [
+              {
+                "address": "0xc6342AD85a4d5CF9EEf0fcC9299C793200EA821F",
+                "balance": {
+                  "free": 1987100589968600,
+                  "freeFormatted": "1987100589.9686",
+                  "reserved": 0,
+                  "reservedFormatted": "0.0",
+                  "frozen": 0,
+                  "frozenFormatted": null,
+                  "miscFrozen": null,
+                  "miscFrozenFormatted": null,
+                  "feeFrozen": null,
+                  "feeFrozenFormatted": null
+                }
+              },
+              {
+                "address": "0x16188b1C88242eFd36F6815dFD7A13E67A1e7f0b",
+                "balance": {
+                  "free": 1531592221939014,
+                  "freeFormatted": "1531592221.939014",
+                  "reserved": 0,
+                  "reservedFormatted": "0.0",
+                  "frozen": 0,
+                  "frozenFormatted": null,
+                  "miscFrozen": null,
+                  "miscFrozenFormatted": null,
+                  "feeFrozen": null,
+                  "feeFrozenFormatted": null
+                }
+              },
+              {
+                "address": "0x386d2eBE1911e63Fa29010575953264eDBC1Baf5",
+                "balance": {
+                  "free": 1512000000000000,
+                  "freeFormatted": "1512000000.0",
+                  "reserved": 0,
+                  "reservedFormatted": "0.0",
+                  "frozen": 0,
+                  "frozenFormatted": null,
+                  "miscFrozen": null,
+                  "miscFrozenFormatted": null,
+                  "feeFrozen": null,
+                  "feeFrozenFormatted": null
+                }
+              }
+            ]
+          }
+          EOF
+          fi
+          
+          # JSONファイルが正常に作成されたかチェック
+          if [ ! -f "public/${TODAY}.json" ]; then
+            echo "Failed to create JSON file"
+            exit 1
+          fi
+          
+          echo "Successfully created public/${TODAY}.json"
+      
+      - name: Commit and push data
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add public/*.json
+          git diff --staged --quiet || git commit -m "Daily data update $(date +'%Y-%m-%d')"
+          git push
+
+  deploy:
+    needs: fetch-data
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install
+      
+      - name: Generate static site
+        run: yarn generate
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.output/public'
+      
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
