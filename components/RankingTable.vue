@@ -164,11 +164,17 @@ function getMovementClass(movement: string | undefined): string {
   min-width: 600px;
 }
 
+@media (max-width: 768px) {
+  .ranking-table {
+    min-width: 100%;
+  }
+}
+
 .ranking-table th {
   background: #34495e;
   color: white;
   padding: 15px 10px;
-  text-align: left;
+  text-align: center;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -313,7 +319,7 @@ function getMovementClass(movement: string | undefined): string {
   
   .ranking-table th,
   .ranking-table td {
-    padding: 8px 5px;
+    padding: 8px 4px;
     font-size: 0.8rem;
   }
   
@@ -325,13 +331,23 @@ function getMovementClass(movement: string | undefined): string {
     display: inline;
   }
   
-  .rank,
+  .rank {
+    width: 50px;
+  }
+  
   .movement {
-    width: 60px;
+    width: 70px;
+  }
+  
+  .address {
+    width: 35%;
+    min-width: 120px;
   }
   
   .amount {
-    min-width: 80px;
+    width: 25%;
+    min-width: 100px;
+    font-size: 0.75rem;
   }
   
   .expand-button {
@@ -343,12 +359,31 @@ function getMovementClass(movement: string | undefined): string {
 @media (max-width: 480px) {
   .ranking-table th,
   .ranking-table td {
-    padding: 6px 3px;
-    font-size: 0.75rem;
+    padding: 6px 2px;
+    font-size: 0.7rem;
   }
   
   .table-header h2 {
     font-size: 1.3rem;
+  }
+  
+  .rank {
+    width: 40px;
+  }
+  
+  .movement {
+    width: 60px;
+  }
+  
+  .address {
+    width: 40%;
+    min-width: 100px;
+  }
+  
+  .amount {
+    width: 30%;
+    min-width: 80px;
+    font-size: 0.7rem;
   }
   
   .expand-button {
