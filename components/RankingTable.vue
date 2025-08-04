@@ -3,7 +3,7 @@
     <div class="table-header">
       <h2>ROOT Wallet Ranking</h2>
       <p class="date-info">
-        当日: {{ currentDate }} | 前日: {{ previousDate }}
+        最新更新日時: {{ formatDate(currentDate) }}
       </p>
       <p class="total-count">
         総件数: {{ rankings.length }}件 
@@ -24,7 +24,9 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in displayedRankings" :key="item.address" class="ranking-row">
+          <tr v-for="item in displayedRankings" :key="item.address" 
+              class="ranking-row" 
+              :class="{ 'highlighted-address': item.address === HIGHLIGHTED_ADDRESS }">
             <td class="rank">{{ item.rank }}</td>
             <td class="movement" :class="getMovementClass(item.movement)">
               {{ item.movement }}
@@ -74,6 +76,9 @@ interface Props {
 
 const props = defineProps<Props>();
 
+// ハイライト対象のアドレス
+const HIGHLIGHTED_ADDRESS = '0x0D0707963952f2fBA59dD06f2b425ace40b492Fe';
+
 // 展開状態を管理
 const showAll = ref(false);
 
@@ -88,6 +93,17 @@ const displayedRankings = computed(() => {
 // 展開/折りたたみの切り替え
 function toggleShowAll() {
   showAll.value = !showAll.value;
+}
+
+// 日付をYYYYMMDD形式からYYYY-MM-DD形式に変換
+function formatDate(dateString: string): string {
+  if (dateString.length !== 8) return dateString;
+  
+  const year = dateString.substring(0, 4);
+  const month = dateString.substring(4, 6);
+  const day = dateString.substring(6, 8);
+  
+  return `${year}-${month}-${day}`;
 }
 
 function getMovementClass(movement: string | undefined): string {
@@ -172,6 +188,14 @@ function getMovementClass(movement: string | undefined): string {
 
 .ranking-row:hover {
   background-color: #f8f9fa;
+}
+
+.ranking-row.highlighted-address {
+  background-color: #fff9c4 !important; /* 薄い黄色 */
+}
+
+.ranking-row.highlighted-address:hover {
+  background-color: #fff3a0 !important; /* ホバー時は少し濃い黄色 */
 }
 
 .ranking-row:last-child {
