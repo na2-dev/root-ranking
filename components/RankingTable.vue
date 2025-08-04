@@ -217,9 +217,11 @@ function getMovementClass(movement: string | undefined): string {
 }
 
 .table-wrapper {
-  overflow-x: auto;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 85vh;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .ranking-table {
@@ -227,11 +229,16 @@ function getMovementClass(movement: string | undefined): string {
   border-collapse: collapse;
   background: white;
   min-width: 800px;
+  position: relative;
 }
 
 @media (max-width: 768px) {
   .ranking-table {
     min-width: 100%;
+  }
+  
+  .table-wrapper {
+    max-height: 75vh;
   }
 }
 
@@ -242,6 +249,10 @@ function getMovementClass(movement: string | undefined): string {
   text-align: center;
   font-weight: 600;
   font-size: 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .ranking-table th:first-child {
