@@ -51,8 +51,9 @@ const previousDataLoaded = ref<boolean>(false);
 const errorMessage = ref<string>('');
 
 // 現在の日付をYYYYMMDD形式で取得
-function getCurrentDateString(): string {
+function getCurrentDateString(num: number): string {
   const now = new Date();
+  now.setDate(now.getDate() - num); // num日前の日付を取得
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
@@ -73,7 +74,11 @@ function getPreviousDateString(): string {
 async function loadRankingData(dateString: string): Promise<RankingData[] | null> {
   try {
     console.log(`Loading data for ${dateString}`);
-    const response = await fetch(`./${dateString}.json`);
+    
+    // ランタイムでbaseURLを取得
+    const config = useRuntimeConfig();
+    const baseURL = config.app.baseURL.replace(/\/$/, ''); // 末尾のスラッシュを削除
+    const response = await fetch(`${baseURL}/${dateString}.json`);
     
     if (!response.ok) {
       console.error(`Failed to fetch ${dateString}.json:`, response.status);
@@ -129,9 +134,9 @@ function calculateMovement(
     
     let movement: string;
     if (movementValue > 0) {
-      movement = `↑${movementValue}`;
+      movement = `▲${movementValue}`;
     } else if (movementValue < 0) {
-      movement = `↓${Math.abs(movementValue)}`;
+      movement = `▼${Math.abs(movementValue)}`;
     } else {
       movement = '-';
     }
@@ -145,8 +150,13 @@ function calculateMovement(
 }
 
 onMounted(async () => {
-  currentDate.value = getCurrentDateString();
+  currentDate.value = getCurrentDateString(0);
   previousDate.value = getPreviousDateString();
+
+  if (!currentDate.value) {
+    currentDate.value = previousDate.value;
+    previousDate.value = getCurrentDateString(2);
+  }
   
   try {
     console.log('Starting data load...');

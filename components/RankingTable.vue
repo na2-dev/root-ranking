@@ -144,9 +144,9 @@ function formatDate(dateString: string): string {
 function getMovementClass(movement: string | undefined): string {
   if (!movement) return '';
   
-  if (movement.startsWith('↑')) {
+  if (movement.startsWith('▲')) {
     return 'movement-up';
-  } else if (movement.startsWith('↓')) {
+  } else if (movement.startsWith('▼')) {
     return 'movement-down';
   } else if (movement === 'NEW') {
     return 'movement-new';
@@ -262,11 +262,13 @@ function getMovementClass(movement: string | undefined): string {
 }
 
 .movement-up {
-  color: #27ae60;
+  color: #22c55e; /* より鮮明な緑色 */
+  font-weight: bold;
 }
 
 .movement-down {
-  color: #e74c3c;
+  color: #ef4444; /* より鮮明な赤色 */
+  font-weight: bold;
 }
 
 .movement-new {

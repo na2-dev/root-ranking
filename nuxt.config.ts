@@ -7,7 +7,15 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       routes: ['/']
-    }
+    },
+    // publicディレクトリのファイルを静的アセットとして含める
+    publicAssets: [
+      {
+        baseURL: process.env.NODE_ENV === 'production' ? '/root-ranking/' : '/',
+        dir: 'public',
+        maxAge: 60 * 60 * 24 // 24時間キャッシュ
+      }
+    ]
   },
   
   app: {
