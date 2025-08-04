@@ -5,6 +5,12 @@
       <p class="date-info">
         当日: {{ currentDate }} | 前日: {{ previousDate }}
       </p>
+      <p class="total-count">
+        総件数: {{ rankings.length }}件 
+        <span v-if="!showAll && rankings.length > 100">
+          ({{ displayedRankings.length }}件表示中)
+        </span>
+      </p>
     </div>
     
     <div class="table-wrapper">
@@ -18,7 +24,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in rankings" :key="item.address" class="ranking-row">
+          <tr v-for="item in displayedRankings" :key="item.address" class="ranking-row">
             <td class="rank">{{ item.rank }}</td>
             <td class="movement" :class="getMovementClass(item.movement)">
               {{ item.movement }}
@@ -33,6 +39,22 @@
       </table>
     </div>
 
+    <!-- 展開/折りたたみボタン -->
+    <div v-if="rankings.length > 100" class="expand-controls">
+      <button 
+        @click="toggleShowAll" 
+        class="expand-button"
+        :class="{ 'expanded': showAll }"
+      >
+        <span v-if="!showAll">
+          ▼ さらに {{ rankings.length - 100 }}件を表示
+        </span>
+        <span v-else>
+          ▲ 上位100件のみ表示
+        </span>
+      </button>
+    </div>
+
     <div v-if="rankings.length === 0" class="no-data">
       <p>データがありません</p>
     </div>
@@ -40,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import type { RankingItem } from '../utils/ranking';
 import { formatNumber, formatAddress } from '../utils/ranking';
 
@@ -49,7 +72,23 @@ interface Props {
   previousDate: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+// 展開状態を管理
+const showAll = ref(false);
+
+// 表示するランキング（100件または全件）
+const displayedRankings = computed(() => {
+  if (showAll.value || props.rankings.length <= 100) {
+    return props.rankings;
+  }
+  return props.rankings.slice(0, 100);
+});
+
+// 展開/折りたたみの切り替え
+function toggleShowAll() {
+  showAll.value = !showAll.value;
+}
 
 function getMovementClass(movement: string | undefined): string {
   if (!movement) return '';
@@ -87,6 +126,12 @@ function getMovementClass(movement: string | undefined): string {
 .date-info {
   color: #7f8c8d;
   font-size: 1rem;
+  margin: 0 0 5px 0;
+}
+
+.total-count {
+  color: #95a5a6;
+  font-size: 0.9rem;
   margin: 0;
 }
 
@@ -192,6 +237,42 @@ function getMovementClass(movement: string | undefined): string {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.expand-controls {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.expand-button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+.expand-button:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+}
+
+.expand-button:active {
+  transform: translateY(0);
+}
+
+.expand-button.expanded {
+  background: #95a5a6;
+}
+
+.expand-button.expanded:hover {
+  background: #7f8c8d;
+}
+
 /* レスポンシブデザイン */
 @media (max-width: 768px) {
   .ranking-table-container {
@@ -228,6 +309,11 @@ function getMovementClass(movement: string | undefined): string {
   .amount {
     min-width: 80px;
   }
+  
+  .expand-button {
+    padding: 10px 20px;
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -239,6 +325,11 @@ function getMovementClass(movement: string | undefined): string {
   
   .table-header h2 {
     font-size: 1.3rem;
+  }
+  
+  .expand-button {
+    padding: 8px 16px;
+    font-size: 0.75rem;
   }
 }
 </style>
