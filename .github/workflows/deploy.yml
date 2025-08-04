@@ -2,8 +2,8 @@ name: Deploy and Fetch Data
 
 on:
   schedule:
-    # 毎日午前9時（UTC 0時）に実行
-    - cron: '0 0 * * *'
+    # 毎日日本時間0時（UTC 15時）に実行 ※日本はUTC+9時間
+    - cron: '0 15 * * *'
   push:
     branches: [ main ]
   workflow_dispatch: # 手動実行を許可
@@ -35,7 +35,8 @@ jobs:
       
       - name: Fetch API data
         run: |
-          # 今日の日付を取得 (YYYYMMDD形式)
+          # 日本時間での今日の日付を取得 (YYYYMMDD形式)
+          export TZ='Asia/Tokyo'
           TODAY=$(date +'%Y%m%d')
           
           # publicディレクトリを作成
@@ -124,6 +125,8 @@ jobs:
       
       - name: Commit and push data
         run: |
+          # 日本時間での今日の日付を取得
+          export TZ='Asia/Tokyo'
           TODAY=$(date +'%Y%m%d')
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -132,11 +135,11 @@ jobs:
           if git ls-files --error-unmatch "public/${TODAY}.json" > /dev/null 2>&1; then
             echo "JSON file already tracked, checking for changes..."
             git add -f public/*.json
-            git diff --staged --quiet || git commit -m "Daily data update $(date +'%Y-%m-%d')"
+            git diff --staged --quiet || git commit -m "Daily data update $(TZ='Asia/Tokyo' date +'%Y-%m-%d')"
           else
             echo "New JSON file found, adding and committing..."
             git add -f public/*.json
-            git commit -m "Daily data update $(date +'%Y-%m-%d')"
+            git commit -m "Daily data update $(TZ='Asia/Tokyo' date +'%Y-%m-%d')"
           fi
           
           git push
