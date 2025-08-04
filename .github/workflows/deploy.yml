@@ -41,6 +41,12 @@ jobs:
           # publicディレクトリを作成
           mkdir -p public
           
+          # 当日のJSONファイルが既に存在するかチェック
+          if [ -f "public/${TODAY}.json" ]; then
+            echo "Data file for ${TODAY} already exists, skipping API call"
+            exit 0
+          fi
+          
           # Root Scan APIからデータを取得
           if [ -n "${{ secrets.ROOT_SCAN_API_KEY }}" ]; then
             echo "Fetching data from Root Scan API..."
@@ -118,10 +124,21 @@ jobs:
       
       - name: Commit and push data
         run: |
+          TODAY=$(date +'%Y%m%d')
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add -f public/*.json
-          git diff --staged --quiet || git commit -m "Daily data update $(date +'%Y-%m-%d')"
+          
+          # 新しいJSONファイルがある場合のみコミット
+          if git ls-files --error-unmatch "public/${TODAY}.json" > /dev/null 2>&1; then
+            echo "JSON file already tracked, checking for changes..."
+            git add -f public/*.json
+            git diff --staged --quiet || git commit -m "Daily data update $(date +'%Y-%m-%d')"
+          else
+            echo "New JSON file found, adding and committing..."
+            git add -f public/*.json
+            git commit -m "Daily data update $(date +'%Y-%m-%d')"
+          fi
+          
           git push
 
   deploy:

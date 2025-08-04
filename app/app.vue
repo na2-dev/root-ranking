@@ -73,7 +73,7 @@ function getPreviousDateString(): string {
 async function loadRankingData(dateString: string): Promise<RankingData[] | null> {
   try {
     console.log(`Loading data for ${dateString}`);
-    const response = await fetch(`/${dateString}.json`);
+    const response = await fetch(`./${dateString}.json`);
     
     if (!response.ok) {
       console.error(`Failed to fetch ${dateString}.json:`, response.status);
