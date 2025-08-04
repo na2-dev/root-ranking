@@ -41,6 +41,7 @@ jobs:
           
           # publicディレクトリを作成
           mkdir -p public
+          mkdir -p backup
           
           # 当日のJSONファイルが既に存在するかチェック
           if [ -f "public/${TODAY}.json" ]; then
@@ -122,6 +123,29 @@ jobs:
           fi
           
           echo "Successfully created public/${TODAY}.json"
+          
+          # 前日のファイルをバックアップに保存
+          export TZ='Asia/Tokyo'
+          YESTERDAY=$(date -d '1 day ago' +'%Y%m%d')
+          
+          if [ -f "public/${YESTERDAY}.json" ]; then
+            cp "public/${YESTERDAY}.json" "backup/"
+            echo "Backed up yesterday's file: ${YESTERDAY}.json"
+          fi
+          
+          # 3日以上前のJSONファイルをpublicから削除
+          echo "Cleaning up old JSON files from public directory (older than 3 days)..."
+          THREE_DAYS_AGO=$(date -d '3 days ago' +'%Y%m%d')
+          
+          for file in public/*.json; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file" .json)
+              if [ "$filename" != "$TODAY" ] && [ "$filename" -lt "$THREE_DAYS_AGO" ]; then
+                rm "$file"
+                echo "Deleted old JSON file from public: $filename.json"
+              fi
+            fi
+          done
       
       - name: Commit and push data
         run: |
@@ -131,18 +155,16 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 新しいJSONファイルがある場合のみコミット
-          if git ls-files --error-unmatch "public/${TODAY}.json" > /dev/null 2>&1; then
-            echo "JSON file already tracked, checking for changes..."
-            git add -f public/*.json
-            git diff --staged --quiet || git commit -m "Daily data update $(TZ='Asia/Tokyo' date +'%Y-%m-%d')"
-          else
-            echo "New JSON file found, adding and committing..."
-            git add -f public/*.json
-            git commit -m "Daily data update $(TZ='Asia/Tokyo' date +'%Y-%m-%d')"
-          fi
+          # 変更があるかチェック
+          git add -f public/*.json backup/*.json 2>/dev/null || true
           
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            echo "Changes detected, committing..."
+            git commit -m "Daily data update $(TZ='Asia/Tokyo' date +'%Y-%m-%d')"
+            git push
+          fi
 
   deploy:
     needs: fetch-data
@@ -152,10 +174,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
-      - name: Checkout
+      - name: Checkout latest changes
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -169,6 +192,34 @@ jobs:
       - name: Generate static site
         run: yarn generate
       
+      - name: Copy current JSON file to output
+        run: |
+          # 日本時間での今日の日付を取得
+          export TZ='Asia/Tokyo'
+          TODAY=$(date +'%Y%m%d')
+          
+          # .output/publicディレクトリを作成
+          mkdir -p .output/public
+          
+          # 当日のJSONファイルのみをコピー
+          if [ -f "public/${TODAY}.json" ]; then
+            cp "public/${TODAY}.json" .output/public/
+            echo "Copied ${TODAY}.json to output directory"
+            ls -la .output/public/${TODAY}.json
+          else
+            echo "Current day JSON file not found: ${TODAY}.json"
+            
+            # フォールバック: 最新のJSONファイルを探す
+            LATEST_FILE=$(ls -1 public/*.json 2>/dev/null | sort -r | head -n1)
+            if [ -n "$LATEST_FILE" ]; then
+              LATEST_FILENAME=$(basename "$LATEST_FILE")
+              cp "$LATEST_FILE" ".output/public/${TODAY}.json"
+              echo "Copied latest available file ($LATEST_FILENAME) as ${TODAY}.json"
+            else
+              echo "No JSON files found in public directory"
+            fi
+          fi
+      
       - name: Setup Pages
         uses: actions/configure-pages@v5
       
@@ -178,4 +229,5 @@ jobs:
           path: '.output/public'
       
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
