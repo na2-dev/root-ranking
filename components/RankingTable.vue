@@ -21,12 +21,12 @@
             <th>変動順位</th>
             <th>アドレス</th>
             <th>保有量</th>
+            <th>備考</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in displayedRankings" :key="item.address" 
-              class="ranking-row" 
-              :class="{ 'highlighted-address': item.address === HIGHLIGHTED_ADDRESS }">
+              class="ranking-row">
             <td class="rank">{{ item.rank }}</td>
             <td class="movement" :class="getMovementClass(item.movement)">
               {{ item.movement }}
@@ -53,6 +53,9 @@
               </div>
             </td>
             <td class="amount">{{ formatNumber(item.amount) }}</td>
+            <td class="remarks">
+              {{ getAddressRemark(item.address) }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -81,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import type { RankingItem } from '../utils/ranking';
 import { formatNumber, formatAddress } from '../utils/ranking';
 
@@ -93,11 +96,38 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// ハイライト対象のアドレス
-const HIGHLIGHTED_ADDRESS = '0x0D0707963952f2fBA59dD06f2b425ace40b492Fe';
-
 // 展開状態を管理
 const showAll = ref(false);
+
+// アドレス備考の対応表
+const addressRemarks = ref<Record<string, string>>({});
+
+// アドレス備考対応表を読み込み
+async function loadAddressRemarks() {
+  try {
+    const config = useRuntimeConfig();
+    const baseURL = config.app.baseURL.replace(/\/$/, '');
+    const response = await fetch(`${baseURL}/address-remarks.json`);
+    
+    if (response.ok) {
+      addressRemarks.value = await response.json();
+    } else {
+      console.warn('Address remarks file not found');
+    }
+  } catch (error) {
+    console.error('Failed to load address remarks:', error);
+  }
+}
+
+// コンポーネントマウント時に対応表を読み込み
+onMounted(() => {
+  loadAddressRemarks();
+});
+
+// アドレスの備考を取得
+function getAddressRemark(address: string): string {
+  return addressRemarks.value[address] || '';
+}
 
 // 表示するランキング（100件または全件）
 const displayedRankings = computed(() => {
@@ -196,7 +226,7 @@ function getMovementClass(movement: string | undefined): string {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  min-width: 600px;
+  min-width: 800px;
 }
 
 @media (max-width: 768px) {
@@ -229,14 +259,6 @@ function getMovementClass(movement: string | undefined): string {
 
 .ranking-row:hover {
   background-color: #f8f9fa;
-}
-
-.ranking-row.highlighted-address {
-  background-color: #fff9c4 !important; /* 薄い黄色 */
-}
-
-.ranking-row.highlighted-address:hover {
-  background-color: #fff3a0 !important; /* ホバー時は少し濃い黄色 */
 }
 
 .ranking-row:last-child {
@@ -338,6 +360,16 @@ function getMovementClass(movement: string | undefined): string {
   min-width: 120px;
 }
 
+.remarks {
+  min-width: 60px;
+  max-width: 80px;
+  padding: 8px 4px;
+  text-align: center;
+  color: #2c3e50;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 .no-data {
   text-align: center;
   padding: 40px;
@@ -420,7 +452,7 @@ function getMovementClass(movement: string | undefined): string {
   }
   
   .address {
-    width: 35%;
+    width: 40%;
     min-width: 120px;
   }
   
@@ -432,9 +464,15 @@ function getMovementClass(movement: string | undefined): string {
   }
   
   .amount {
-    width: 25%;
+    width: 30%;
     min-width: 100px;
     font-size: 0.75rem;
+  }
+  
+  .remarks {
+    width: 15%;
+    min-width: 50px;
+    max-width: 70px;
   }
   
   .expand-button {
@@ -463,7 +501,7 @@ function getMovementClass(movement: string | undefined): string {
   }
   
   .address {
-    width: 40%;
+    width: 35%;
     min-width: 100px;
   }
   
@@ -475,9 +513,15 @@ function getMovementClass(movement: string | undefined): string {
   }
   
   .amount {
-    width: 30%;
+    width: 25%;
     min-width: 80px;
     font-size: 0.7rem;
+  }
+  
+  .remarks {
+    width: 20%;
+    min-width: 40px;
+    max-width: 60px;
   }
   
   .expand-button {
