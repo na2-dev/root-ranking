@@ -29,6 +29,8 @@ export interface RankingItem extends RankingData {
   rank: number;
   previousRank?: number;
   movement?: string;
+  previousAmount?: string;
+  amountChange?: string;
 }
 
 /**

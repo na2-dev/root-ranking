@@ -52,7 +52,14 @@
                 </button>
               </div>
             </td>
-            <td class="amount">{{ formatNumber(item.amount) }}</td>
+            <td class="amount">
+              <div class="amount-container">
+                <div class="current-amount">{{ formatNumber(item.amount) }}</div>
+                <div v-if="item.amountChange" class="amount-change" :class="getAmountChangeClass(item.amountChange)">
+                  {{ item.amountChange }}
+                </div>
+              </div>
+            </td>
             <td class="remarks">
               {{ getAddressRemark(item.address) }}
             </td>
@@ -183,6 +190,15 @@ function getMovementClass(movement: string | undefined): string {
   }
   
   return 'movement-neutral';
+}
+
+function getAmountChangeClass(amountChange: string): string {
+  if (amountChange.startsWith('+')) {
+    return 'amount-increase';
+  } else if (amountChange.startsWith('-')) {
+    return 'amount-decrease';
+  }
+  return '';
 }
 </script>
 
@@ -371,6 +387,31 @@ function getMovementClass(movement: string | undefined): string {
   min-width: 120px;
 }
 
+.amount-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.current-amount {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.amount-change {
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.amount-increase {
+  color: #22c55e;
+}
+
+.amount-decrease {
+  color: #ef4444;
+}
+
 .remarks {
   min-width: 60px;
   max-width: 80px;
@@ -480,6 +521,10 @@ function getMovementClass(movement: string | undefined): string {
     font-size: 0.75rem;
   }
   
+  .amount-change {
+    font-size: 0.65rem;
+  }
+  
   .remarks {
     width: 15%;
     min-width: 50px;
@@ -527,6 +572,10 @@ function getMovementClass(movement: string | undefined): string {
     width: 25%;
     min-width: 80px;
     font-size: 0.7rem;
+  }
+  
+  .amount-change {
+    font-size: 0.6rem;
   }
   
   .remarks {
