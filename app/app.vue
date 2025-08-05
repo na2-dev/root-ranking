@@ -41,6 +41,8 @@ interface RankingItem extends RankingData {
   rank: number;
   previousRank?: number;
   movement?: string;
+  previousAmount?: string;
+  amountChange?: string;
 }
 
 const rankings = ref<RankingItem[]>([]);
@@ -51,9 +53,8 @@ const previousDataLoaded = ref<boolean>(false);
 const errorMessage = ref<string>('');
 
 // 現在の日付をYYYYMMDD形式で取得
-function getCurrentDateString(num: number): string {
+function getCurrentDateString(): string {
   const now = new Date();
-  now.setDate(now.getDate() - num); // num日前の日付を取得
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
@@ -67,6 +68,16 @@ function getPreviousDateString(): string {
   const year = yesterday.getFullYear();
   const month = String(yesterday.getMonth() + 1).padStart(2, '0');
   const day = String(yesterday.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
+// 現在の日付-numをYYYYMMDD形式で取得
+function getMinusDateString(num: number): string {
+  const now = new Date();
+  now.setDate(now.getDate() - num);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
   return `${year}${month}${day}`;
 }
 
@@ -114,23 +125,23 @@ function calculateMovement(
   currentRanking: RankingItem[],
   previousRanking: RankingItem[]
 ): RankingItem[] {
-  const previousRankMap = new Map<string, number>();
+  const previousRankMap = new Map<string, { rank: number; amount: string }>();
   
   previousRanking.forEach(item => {
-    previousRankMap.set(item.address, item.rank);
+    previousRankMap.set(item.address, { rank: item.rank, amount: item.amount });
   });
 
   return currentRanking.map(currentItem => {
-    const previousRank = previousRankMap.get(currentItem.address);
+    const previousData = previousRankMap.get(currentItem.address);
     
-    if (previousRank === undefined) {
+    if (previousData === undefined) {
       return {
         ...currentItem,
         movement: 'NEW'
       };
     }
 
-    const movementValue = previousRank - currentItem.rank;
+    const movementValue = previousData.rank - currentItem.rank;
     
     let movement: string;
     if (movementValue > 0) {
@@ -141,28 +152,42 @@ function calculateMovement(
       movement = '-';
     }
 
+    // 保有量の変動を計算
+    const currentAmount = parseFloat(currentItem.amount);
+    const previousAmount = parseFloat(previousData.amount);
+    const amountDiff = currentAmount - previousAmount;
+    
+    let amountChange: string = '';
+    if (amountDiff > 0) {
+      amountChange = `+${amountDiff.toLocaleString()}`;
+    } else if (amountDiff < 0) {
+      amountChange = `${amountDiff.toLocaleString()}`;
+    }
+
     return {
       ...currentItem,
-      previousRank,
-      movement
+      previousRank: previousData.rank,
+      movement,
+      previousAmount: previousData.amount,
+      amountChange
     };
   });
 }
 
 onMounted(async () => {
-  currentDate.value = getCurrentDateString(0);
+  currentDate.value = getCurrentDateString();
   previousDate.value = getPreviousDateString();
 
-  if (!currentDate.value) {
-    currentDate.value = previousDate.value;
-    previousDate.value = getCurrentDateString(2);
-  }
-  
   try {
     console.log('Starting data load...');
     
     // 当日のデータを読み込み
-    const currentData = await loadRankingData(currentDate.value);
+    let currentData = await loadRankingData(currentDate.value);
+    if (!currentData) {
+      currentDate.value = getMinusDateString(1) // 当日データがない場合は前日データを使用
+      previousDate.value = getMinusDateString(2); // 前日データも1日前に設定
+      currentData = await loadRankingData(currentDate.value);
+    }
     if (currentData) {
       currentDataLoaded.value = true;
       console.log('Current data loaded successfully');
