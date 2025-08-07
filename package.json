@@ -6,6 +6,7 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate && cp -r public/*.json .output/public/ 2>/dev/null || true",
+    "build:gh-pages": "NITRO_PRESET=github_pages nuxt build",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },

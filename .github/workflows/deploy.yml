@@ -190,7 +190,7 @@ jobs:
         run: yarn install
       
       - name: Generate static site
-        run: yarn generate
+        run: yarn build:gh-pages
       
       - name: Copy current JSON file to output
         run: |
