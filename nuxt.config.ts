@@ -3,27 +3,22 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   
-  // GitHub Pages設定
+  // 静的サイト生成を有効化
+  ssr: false,
   nitro: {
     prerender: {
-      routes: ['/']
+      routes: ['/', '/supply-analysis'],
+      crawlLinks: true
     },
-    // publicディレクトリのファイルを静的アセットとして含める
-    publicAssets: [
-      {
-        baseURL: process.env.NODE_ENV === 'production' ? '/root-ranking/' : '/',
-        dir: 'public',
-        maxAge: 60 * 60 * 24 // 24時間キャッシュ
-      }
-    ],
-    // リダイレクト設定
-    routeRules: {
-      '/root-ranking': { redirect: '/' },
-      '/root-ranking/': { redirect: '/' }
+    // GitHub Pages用の設定
+    output: {
+      publicDir: '.output/public'
     }
   },
   
+  // GitHub Pages設定
   app: {
-    baseURL: '/'
+    baseURL: process.env.NODE_ENV === 'production' ? '/root-ranking/' : '/',
+    buildAssetsDir: '_nuxt/'
   }
 })
