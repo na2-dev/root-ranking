@@ -1,9 +1,8 @@
 <template>
   <div class="ranking-table-container">
     <div class="table-header">
-      <h2>ROOT Wallet Ranking</h2>
       <p class="date-info">
-        最新更新日時: {{ formatDate(currentDate) }}
+        最新更新日時: {{ formatDate(latestDataDate) }}
       </p>
       <p class="total-count">
         総件数: {{ rankings.length }}件 
@@ -93,7 +92,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import type { RankingItem } from '../utils/ranking';
-import { formatNumber, formatAddress } from '../utils/ranking';
+import { formatNumber, formatAddress, getCurrentDateString, getPreviousDateString, loadRankingData } from '../utils/ranking';
 
 interface Props {
   rankings: RankingItem[];
@@ -108,6 +107,9 @@ const showAll = ref(false);
 
 // アドレス備考の対応表
 const addressRemarks = ref<Record<string, string>>({});
+
+// 最新データの日付
+const latestDataDate = ref<string>('');
 
 // アドレス備考対応表を読み込み
 async function loadAddressRemarks() {
@@ -126,9 +128,16 @@ async function loadAddressRemarks() {
   }
 }
 
+
 // コンポーネントマウント時に対応表を読み込み
 onMounted(() => {
   loadAddressRemarks();
+  // 最新データの日付を設定
+  latestDataDate.value = getCurrentDateString();
+  loadRankingData(latestDataDate.value);
+  if (!loadRankingData(latestDataDate.value)) {
+    latestDataDate.value = getPreviousDateString();
+  }
 });
 
 // アドレスの備考を取得
@@ -211,19 +220,20 @@ function getAmountChangeClass(amountChange: string): string {
 
 .table-header {
   text-align: center;
-  margin-bottom: 30px;
-}
-
-.table-header h2 {
-  color: #2c3e50;
-  font-size: 2rem;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .date-info {
-  color: #7f8c8d;
+  color: #2c3e50;
   font-size: 1rem;
   margin: 0 0 5px 0;
+  font-weight: 600;
+}
+
+.previous-date {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  font-weight: 400;
 }
 
 .total-count {
@@ -473,12 +483,13 @@ function getAmountChangeClass(amountChange: string): string {
     padding: 10px;
   }
   
-  .table-header h2 {
-    font-size: 1.5rem;
-  }
-  
   .date-info {
     font-size: 0.9rem;
+  }
+  
+  .previous-date {
+    display: block;
+    margin-top: 2px;
   }
   
   .ranking-table th,
@@ -544,8 +555,12 @@ function getAmountChangeClass(amountChange: string): string {
     font-size: 0.7rem;
   }
   
-  .table-header h2 {
-    font-size: 1.3rem;
+  .date-info {
+    font-size: 0.8rem;
+  }
+  
+  .previous-date {
+    font-size: 0.75rem;
   }
   
   .rank {

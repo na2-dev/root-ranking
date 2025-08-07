@@ -56,6 +56,35 @@ export function getPreviousDateString(): string {
   return `${year}${month}${day}`;
 }
 
+// JSONファイルからデータを読み込み
+export async function loadRankingData(dateString: string): Promise<RankingData[] | null> {
+  try {
+    console.log(`Loading data for ${dateString}`);
+    
+    // ランタイムでbaseURLを取得
+    const config = useRuntimeConfig();
+    const baseURL = config.app.baseURL.replace(/\/$/, ''); // 末尾のスラッシュを削除
+    const response = await fetch(`${baseURL}/${dateString}.json`);
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch ${dateString}.json:`, response.status);
+      return null;
+    }
+    
+    const apiResponse = await response.json();
+    console.log(`Loaded data for ${dateString}:`, apiResponse);
+    
+    // APIレスポンスをRankingDataに変換
+    return apiResponse.data.map((item: any) => ({
+      address: item.address,
+      amount: item.balance.freeFormatted // freeFormattedを使用
+    }));
+  } catch (error) {
+    console.error(`Failed to load data for ${dateString}:`, error);
+    return null;
+  }
+}
+
 /**
  * データをamount順でソートしてランキングを作成
  */
@@ -124,7 +153,7 @@ export function parseApiResponse(apiResponse: ApiResponse): RankingData[] {
 /**
  * JSONファイルからデータを読み込み
  */
-export async function loadRankingData(dateString: string): Promise<RankingData[] | null> {
+export async function loadJsonFileData(dateString: string): Promise<RankingData[] | null> {
   try {
     const response = await fetch(`/${dateString}.json`);
     if (!response.ok) {
@@ -133,7 +162,7 @@ export async function loadRankingData(dateString: string): Promise<RankingData[]
     const apiResponse: ApiResponse = await response.json();
     return parseApiResponse(apiResponse);
   } catch (error) {
-    console.error(`Failed to load data for ${dateString}:`, error);
+    console.error(`Failed to load json data for ${dateString}:`, error);
     return null;
   }
 }

@@ -15,10 +15,15 @@ export default defineNuxtConfig({
         dir: 'public',
         maxAge: 60 * 60 * 24 // 24時間キャッシュ
       }
-    ]
+    ],
+    // リダイレクト設定
+    routeRules: {
+      '/root-ranking': { redirect: '/' },
+      '/root-ranking/': { redirect: '/' }
+    }
   },
   
   app: {
-    baseURL: process.env.NODE_ENV === 'production' ? '/root-ranking/' : '/'
+    baseURL: '/'
   }
 })

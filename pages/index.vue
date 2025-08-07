@@ -1,36 +1,29 @@
 <template>
   <div>
-    <NuxtRouteAnnouncer />
-    <div class="app-container">
-      <!-- <div class="debug-info">
-        <h2>デバッグ情報</h2>
-        <p>現在日付: {{ currentDate }}</p>
-        <p>前日日付: {{ previousDate }}</p>
-        <p>現在データ読み込み状況: {{ currentDataLoaded ? '成功' : '失敗' }}</p>
-        <p>前日データ読み込み状況: {{ previousDataLoaded ? '成功' : '失敗' }}</p>
-        <p>ランキング件数: {{ rankings.length }}</p>
-        <div v-if="errorMessage" class="error">
-          エラー: {{ errorMessage }}
+    <AppHeader />
+    
+    <main class="main-content">
+      <div class="app-container">
+        <RankingTable 
+          v-if="rankings.length > 0"
+          :rankings="rankings"
+          :current-date="currentDate"
+          :previous-date="previousDate"
+        />
+        
+        <div v-else class="loading">
+          <p>データを読み込み中...</p>
         </div>
-      </div> -->
-      
-      <RankingTable 
-        v-if="rankings.length > 0"
-        :rankings="rankings"
-        :current-date="currentDate"
-        :previous-date="previousDate"
-      />
-      
-      <div v-else class="loading">
-        <p>データを読み込み中...</p>
       </div>
-    </div>
+    </main>
+    
+    <AppFooter />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import RankingTable from '../components/RankingTable.vue';
+import {loadRankingData } from '../utils/ranking';
 
 interface RankingData {
   address: string;
@@ -79,35 +72,6 @@ function getMinusDateString(num: number): string {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}${month}${day}`;
-}
-
-// JSONファイルからデータを読み込み
-async function loadRankingData(dateString: string): Promise<RankingData[] | null> {
-  try {
-    console.log(`Loading data for ${dateString}`);
-    
-    // ランタイムでbaseURLを取得
-    const config = useRuntimeConfig();
-    const baseURL = config.app.baseURL.replace(/\/$/, ''); // 末尾のスラッシュを削除
-    const response = await fetch(`${baseURL}/${dateString}.json`);
-    
-    if (!response.ok) {
-      console.error(`Failed to fetch ${dateString}.json:`, response.status);
-      return null;
-    }
-    
-    const apiResponse = await response.json();
-    console.log(`Loaded data for ${dateString}:`, apiResponse);
-    
-    // APIレスポンスをRankingDataに変換
-    return apiResponse.data.map((item: any) => ({
-      address: item.address,
-      amount: item.balance.freeFormatted // freeFormattedを使用
-    }));
-  } catch (error) {
-    console.error(`Failed to load data for ${dateString}:`, error);
-    return null;
-  }
 }
 
 // データをamount順でソートしてランキングを作成
@@ -221,59 +185,18 @@ onMounted(async () => {
 });
 </script>
 
-<style>
-body {
-  margin: 0;
-  padding: 0;
-  background-color: #f5f6fa;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+<style scoped>
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-}
-
-.debug-info {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.debug-info h2 {
-  margin-top: 0;
-  color: #2c3e50;
-}
-
-.error {
-  color: #e74c3c;
-  font-weight: bold;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #7f8c8d;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-</style>
-
-<style>
-body {
-  margin: 0;
-  padding: 0;
-  background-color: #f5f6fa;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
-
-.app-container {
-  min-height: 100vh;
-  padding: 20px 0;
+  flex: 1;
 }
 
 .loading {
@@ -283,5 +206,19 @@ body {
   min-height: 50vh;
   font-size: 1.2rem;
   color: #7f8c8d;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 15px;
+  }
+  
+  .loading {
+    font-size: 1rem;
+    min-height: 40vh;
+  }
 }
 </style>
