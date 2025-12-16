@@ -133,14 +133,15 @@ jobs:
             echo "Backed up yesterday's file: ${YESTERDAY}.json"
           fi
           
-          # 3日以上前のJSONファイルをpublicから削除
-          echo "Cleaning up old JSON files from public directory (older than 3 days)..."
-          THREE_DAYS_AGO=$(date -d '3 days ago' +'%Y%m%d')
-          
+          # public には「今日・昨日・一昨日」の3日分のみ残す（それより古いものを削除）
+          echo "Cleaning up public to keep only the last 3 days (today, yesterday, two days ago)..."
+          TWO_DAYS_AGO=$(date -d '2 days ago' +'%Y%m%d')
+
           for file in public/*.json; do
             if [ -f "$file" ]; then
               filename=$(basename "$file" .json)
-              if [ "$filename" != "$TODAY" ] && [ "$filename" -lt "$THREE_DAYS_AGO" ]; then
+              # YYYYMMDD の文字列比較で十分（ゼロ埋め済み）
+              if [ "$filename" -lt "$TWO_DAYS_AGO" ]; then
                 rm "$file"
                 echo "Deleted old JSON file from public: $filename.json"
               fi
