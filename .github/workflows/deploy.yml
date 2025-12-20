@@ -43,9 +43,9 @@ jobs:
           mkdir -p public
           mkdir -p backup
           
-          # 当日のJSONファイルが既に存在するかチェック
-          if [ -f "public/${TODAY}.json" ]; then
-            echo "Data file for ${TODAY} already exists, skipping API call"
+          # 当日のJSONファイルが既に存在するかチェック（空でなければ API 呼び出しをスキップ）
+          if [ -s "public/${TODAY}.json" ]; then
+            echo "Data file for ${TODAY} exists and is non-empty, skipping API call"
             exit 0
           fi
           
@@ -53,13 +53,22 @@ jobs:
           if [ -n "${{ secrets.ROOT_SCAN_API_KEY }}" ]; then
             echo "Fetching data from Root Scan API..."
             
-            # APIからデータを取得
-            curl -X POST "https://api.rootscan.io/v1/addresses" \
+            # APIからデータを取得し、HTTPステータスを評価
+            TMP_FILE=$(mktemp)
+            HTTP_CODE=$(curl -s -o "$TMP_FILE" -w "%{http_code}" -X POST "https://api.rootscan.io/v1/addresses" \
                  -H "Accept: application/json" \
                  -H "Content-Type: application/json" \
                  -H "x-api-key: ${{ secrets.ROOT_SCAN_API_KEY }}" \
-                 -d '{"page":0,"perPage":1000}' \
-                 -o "public/${TODAY}.json"
+                 -d '{"page":0,"perPage":1000}')
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              mv "$TMP_FILE" "public/${TODAY}.json"
+              echo "API returned 200; saved data to public/${TODAY}.json"
+            else
+              echo "API returned non-200 (${HTTP_CODE}); creating zero-byte data file"
+              : > "public/${TODAY}.json"
+              rm -f "$TMP_FILE"
+            fi
           else
             echo "ROOT_SCAN_API_KEY not set, creating sample data..."
             # サンプルデータを生成（テスト用）
